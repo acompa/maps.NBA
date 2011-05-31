@@ -12,20 +12,33 @@ class StreamNBAListener(tweepy.StreamListener):
 	# r = redis.Redis(host = 'localhost', port = 6379, db = 0)
 	
 	def on_status(self, status):
+		"""
+		Define listener's behavior when a new status is streamed to me.
+		
+		Commented out code for storing to Redis DB--will worry about that
+		later. Maybe a future project.
+		"""
+		
+		name = status.author.screen_name
+		t = status.created_at
+		source = status.source
+		text = status.text
+		
+		# Some statuses do not have coordinates. Deal with them. 
+		if status.coordinates:
+			coords = status.coordinates['coordinates']
+		else:
+			coords = '.'
+
 		try:
-			print self.status_wrapper.fill(status.text)
-			print '\n %s  %s  via %s\n' % (status.author.screen_name, status.created_at, status.source)
+			print self.status_wrapper.fill(text)
+			print '\n %s  %s  via %s\n' % (name, t, source)
 			print status.coordinates['coordinates']
 		except:
 			# Catch any unicode errors while printing to console
 			# and just ignore them to avoid breaking application.
 			pass
-			
-		if status.coordinates:
-			coords = status.coordinates['coordinates']
-		else:
-			coords = None
-		
+				
 		# Messing with Redis.
 		# if r.exists(status.created_at):
 		# 	key = str(status.created_at) + "-1"
@@ -38,16 +51,10 @@ class StreamNBAListener(tweepy.StreamListener):
 		# 	self.r.rpush(key, '.')
 		# self.r.rpush(key, status.text.encode('utf-8'))
 		
-		# And outfiling data in case Redis fails.
-		outfile = open('/Users/alexc/Dropbox/Develop/nbafinals/test.txt', 'a')
-		if coords:
-			outfile.write('%s, %s, %s, %s\n' %
-		                  (status.created_at, status.author.screen_name.encode('utf-8'),
-		                   status.coordinates['coordinates'], status.text.encode('utf-8')))
-		else:
-			outfile.write('%s, %s, ., %s\n' %
-		                  (status.created_at, status.author.screen_name.encode('utf-8'), status.text.encode('utf-8')))
-			
+		# Outfiling data in CSV format.
+		outfile = open('./game1.txt', 'a')
+		outfile.write('%s, %s, %s, %s\n' %
+		                  (t, name.encode('utf-8'), coords, text.encode('utf-8')))
 		outfile.close()
 	
 	def on_error(self, status_code):
