@@ -1,5 +1,6 @@
 import tweepy
-from time import sleep
+from time import mktime
+#from datetime import datetime, timedelta
 from textwrap import TextWrapper
 import redis
 
@@ -9,7 +10,7 @@ class StreamNBAListener(tweepy.StreamListener):
 	"""
 	
 	status_wrapper = TextWrapper(width=60, initial_indent='    ', subsequent_indent='    ')
-	# r = redis.Redis(host = 'localhost', port = 6379, db = 0)
+	r = redis.Redis(host = 'localhost', port = 6379, db = 0)
 	
 	def on_status(self, status):
 		"""
@@ -40,16 +41,16 @@ class StreamNBAListener(tweepy.StreamListener):
 			pass
 				
 		# Messing with Redis.
-		# if r.exists(status.created_at):
-		# 	key = str(status.created_at) + "-1"
-		# else:
-		# 	key = str(status.created_at)
-		# self.r.rpush(key, status.author.screen_name)
-		# if coords:
-		# 	self.r.rpush(key, status.coordinates['coordinates'])			
-		# else:
-		# 	self.r.rpush(key, '.')
-		# self.r.rpush(key, status.text.encode('utf-8'))
+		counter = "a"
+		key = str(t) + str(counter)
+		while self.r.exists(key):
+			key += counter 
+		self.r.rpush(key, status.author.screen_name)
+		if coords != '.':
+		 	self.r.rpush(key, status.coordinates['coordinates'])			
+		else:
+		 	self.r.rpush(key, '.')
+		self.r.rpush(key, status.text.encode('utf-8'))
 		
 		# Outfiling data in CSV format.
 		outfile = open('./game1.txt', 'a')
