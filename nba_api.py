@@ -53,7 +53,7 @@ class StreamNBAListener(tweepy.StreamListener):
 		self.r.rpush(key, status.text.encode('utf-8'))
 		
 		# Outfiling data in CSV format.
-		outfile = open('./game1.txt', 'a')
+		outfile = open('./game2.txt', 'a')
 		outfile.write('%s, %s, %s, %s\n' %
 		                  (t, name.encode('utf-8'), coords, text.encode('utf-8')))
 		outfile.close()
