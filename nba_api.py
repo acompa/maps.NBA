@@ -1,6 +1,5 @@
 import tweepy
 from time import mktime
-#from datetime import datetime, timedelta
 from textwrap import TextWrapper
 import redis
 
@@ -14,25 +13,25 @@ class StreamNBAListener(tweepy.StreamListener):
 	
 	def on_status(self, status):
 		"""
-		Define listener's behavior when a new status is streamed to me.
+		Define listener's behavior when a new status is streamed to me. Listener will:
 		
-		Commented out code for storing to Redis DB--will worry about that
-		later. Maybe a future project.
+		1. Format and display status metadata.
+		2. Save status info to Redis database.
 		"""
 		
 		name = status.author.screen_name
 		t = status.created_at
 		source = status.source
-		text = status.text
+		text = status.text.replace('\n', ' ').strip('"').encode('utf-8')
 		
-		# Some statuses do not have coordinates. Deal with them. 
+		# Some statuses do not have coordinates. Save value as missing.
 		if status.coordinates:
 			coords = status.coordinates['coordinates']
 		else:
-			coords = '.'
+			coords = '[NA, NA]'
 
 		try:
-			print self.status_wrapper.fill(text)
+			print self.status_wrapper.fill(status.text)
 			print '\n %s  %s  via %s\n' % (name, t, source)
 			print status.coordinates['coordinates']
 		except:
@@ -40,24 +39,16 @@ class StreamNBAListener(tweepy.StreamListener):
 			# and just ignore them to avoid breaking application.
 			pass
 				
-		# Messing with Redis.
-		counter = "a"
-		key = str(t) + str(counter)
+		# Instantiating key for new tweet, pushing values onto key.
+		counter = 1
+		key = "%s:%0.2d" % (str(t), counter)
 		while self.r.exists(key):
-			key += counter 
-		self.r.rpush(key, status.author.screen_name)
-		if coords != '.':
-		 	self.r.rpush(key, status.coordinates['coordinates'])			
-		else:
-		 	self.r.rpush(key, '.')
-		self.r.rpush(key, status.text.encode('utf-8'))
-		
-		# Outfiling data in CSV format.
-		outfile = open('./game3.txt', 'a')
-		outfile.write('%s\t%s\t%s\t%s\n' %
-		                  (t, name.encode('utf-8'), coords, text.encode('utf-8')))
-		outfile.close()
-	
+			counter += 1
+			key = "%s:%0.2d" % (str(t), counter)
+		self.r.rpush(key, name)
+		self.r.rpush(key, coords)
+		self.r.rpush(key, text)
+
 	def on_error(self, status_code):
 		print "Error! Status code: %s" % status_code
 		return True
