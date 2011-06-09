@@ -1,23 +1,37 @@
 import redis
 
-out = open("./data/game1_clean.txt", "w")
+out = open("./data/game4_clean.txt", "w")
 r = redis.Redis(host = 'localhost', port = 6379, db = 0)
 
 for key in r.keys():
 
+    if key == 'foo':
+        r.delete('foo')
+        continue
+
     # Strip all newlines. Comment out rpush when not processing Game 1/2 data.
-    text = r.rpop(key)
-    r.rpush(key, text.replace('\n', ' ').strip('"'))
+    # text = r.rpop(key)
+    #r.rpush(key, text.replace('\n', ' ').strip('"'))
 
     # Split coordinates into their own variables.
-    coords = r.lindex(key, 2).split(",")
+    try:
+        coords = r.lindex(key, 2).split(",")
+    except:
+        print key
 
     if len(coords) == 2:
-        long = coords[0].strip("[")
+        llong = coords[0].strip("[")
         lat = coords[1].strip("]")
+    else:
+        llong = 'NA'
+        lat = 'NA'
 
     text = r.lindex(key, 3)
-    r.linsert(key, before, text, long)
-    r.linsert(key, before, text, lat)
+    r.linsert(key, "before", text, llong)
+    r.linsert(key, "before", text, lat)
 
-    out.write("%s\t%s\t%s\t%s\n" % (key, r.lindex(key, 0), r.lindex(key, 1), r.lindex(key, 2)))
+    # Count # of a's in key, convert to microsecond count.
+    aCount = key.count('a')
+    newKey = key.strip('a') + ":%0.2d" % aCount
+
+    out.write("%s\t%s\t%s\t%s\t%s\n" % (newKey, r.lindex(key, 0), llong, lat, r.lindex(key, 2)))
