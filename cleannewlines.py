@@ -1,6 +1,6 @@
 import redis
 
-out = open("./data/game4_clean.txt", "w")
+out = open("./data/game2_clean.txt", "w")
 r = redis.Redis(host = 'localhost', port = 6379, db = 0)
 
 for key in r.keys():
@@ -15,9 +15,10 @@ for key in r.keys():
 
     # Split coordinates into their own variables.
     try:
-        coords = r.lindex(key, 2).split(",")
+        coords = r.lindex(key, 1).split(",")
     except:
-        print key
+	coords = 'NA'
+	print key
 
     if len(coords) == 2:
         llong = coords[0].strip("[")
@@ -26,12 +27,15 @@ for key in r.keys():
         llong = 'NA'
         lat = 'NA'
 
-    text = r.lindex(key, 3)
-    r.linsert(key, "before", text, llong)
-    r.linsert(key, "before", text, lat)
+    try:
+        text = r.lindex(key, 2).replace('\n', ' ').strip('"')
+    except AttributeError:
+        continue
+    #r.linsert(key, "before", text, llong)
+    #r.linsert(key, "before", text, lat)
 
     # Count # of a's in key, convert to microsecond count.
     aCount = key.count('a')
     newKey = key.strip('a') + ":%0.2d" % aCount
 
-    out.write("%s\t%s\t%s\t%s\t%s\n" % (newKey, r.lindex(key, 0), llong, lat, r.lindex(key, 2)))
+    out.write("%s\t%s\t%s\t%s\t%s\n" % (newKey, r.lindex(key, 0), llong, lat, text))
