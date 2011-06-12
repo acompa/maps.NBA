@@ -1,6 +1,7 @@
 import redis
+from string import whitespace
 
-out = open("./data/game2_clean.txt", "w")
+out = open("./data/game1_clean.txt", "w")
 r = redis.Redis(host = 'localhost', port = 6379, db = 0)
 
 for key in r.keys():
@@ -28,7 +29,8 @@ for key in r.keys():
         lat = 'NA'
 
     try:
-        text = r.lindex(key, 2).replace('\n', ' ').strip('"')
+        text = r.lindex(key, 2).replace('\n', ' ').strip('"').replace(
+	                '\t', ' ').replace('\015', ' ')
     except AttributeError:
         continue
     #r.linsert(key, "before", text, llong)

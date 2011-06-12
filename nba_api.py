@@ -22,7 +22,9 @@ class StreamNBAListener(tweepy.StreamListener):
 		name = status.author.screen_name
 		t = status.created_at
 		source = status.source
-		text = status.text.replace('\n', ' ').strip('"').encode('utf-8')
+		text = status.text.replace('\n', ' ').strip('"').encode(
+                                           'utf-8').replace('\t', ' ').replace(
+	                                   '\015', ' ')
 		
 		# Some statuses do not have coordinates. Save value as missing.
 		if status.coordinates:
