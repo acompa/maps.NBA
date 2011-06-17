@@ -1,7 +1,7 @@
 import redis
 from string import whitespace
 
-out = open("./data/game1_clean.txt", "w")
+out = open("./data/game6_clean.txt", "w")
 r = redis.Redis(host = 'localhost', port = 6379, db = 0)
 
 for key in r.keys():
