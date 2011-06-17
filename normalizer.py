@@ -77,24 +77,33 @@ class DataNormalizer():
         out = open("data/" + self.db + "_count.txt", "w")
         out.write("MAVS\tHEAT\tFINALS\n")
 
+        total = 0
         for row in data:
             countM = 0
             countH = 0
             countF = 0
+            reference = False
             tweet = row[4]
 
             for s in MAVS:
                 if tweet.find(s) > -1:
+                    reference = True
                     countM += 1
 
             for s in HEAT:
                 if tweet.find(s) > -1:
+                    reference = True
                     countH += 1
 
             for s in FINALS:
                 if tweet.find(s) > -1:
+                    reference = True
                     countF += 1
 
+            if reference:
+                total += 1
+                
             out.write("%d\t%d\t%d\n" % (countM, countH, countF))
 
+        print "%d tweets mention %s of the Finals" % (total, self.db)
         out.close()
