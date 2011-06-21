@@ -2,18 +2,24 @@ import redis
 from os import system
 import csv
 from corpus import MAVS, HEAT, FINALS
+from datetime import datetime, timedelta
+from time import mktime
 
 class DataNormalizer():
-
+    
     def __init__(self, db):
-        """On init, copies archived Redis db to working db location, then restarts
-        Redis with new database.
-
-        Also deletes any keys == 'foo'.
-
-        """
+        """Sets db name and tipoff time on init. """
 
         self.db = str(db)
+        if self.db == "game1":
+            self.tipoff = datetime(2011, 05, 31, hour=21, minute=6, second=00)
+        elif self.db == "game2":
+            self.tipoff = datetime(2011, 06, 02, hour=21, minute=7, second=00)
+        elif self.db == "game4":
+            self.tipoff = datetime(2011, 06, 07, hour=21, minute=7, second=00)
+        elif self.db == "game6":
+            self.tipoff = datetime(2011, 06, 12, hour=21, minute=10, second=00)
+        
 
     def clean_data(self):
         """ Cleans the data as follows:
@@ -67,15 +73,13 @@ class DataNormalizer():
     def check_corpus(self):
         """ Checks text in each tweet for Finals references. Creates new file 
         with count for Mavs, Heat, and Finals references.
-
-        Possible Map-Reduce opportunity here?
-
+        
         """
 
         data = csv.reader(open("data/" + self.db + "_clean.txt", "rU"), 
-                      delimiter = "\t")
+                          delimiter = "\t")
         out = open("data/" + self.db + "_count.txt", "w")
-        out.write("MAVS\tHEAT\tFINALS\n")
+        out.write("TIME\tMAVS\tHEAT\tFINALS\n")
 
         total = 0
         for row in data:
@@ -83,27 +87,44 @@ class DataNormalizer():
             countH = 0
             countF = 0
             reference = False
-            tweet = row[4]
+            tweet = row[4].lower()
 
             for s in MAVS:
-                if tweet.find(s) > -1:
+                if tweet.find(s.lower()) > -1:
                     reference = True
                     countM += 1
 
             for s in HEAT:
-                if tweet.find(s) > -1:
+                if tweet.find(s.lower()) > -1:
                     reference = True
                     countH += 1
 
             for s in FINALS:
-                if tweet.find(s) > -1:
+                if tweet.find(s.lower()) > -1:
                     reference = True
                     countF += 1
 
             if reference:
                 total += 1
                 
-            out.write("%d\t%d\t%d\n" % (countM, countH, countF))
+            out.write("%s\t%d\t%d\t%d\n" % (row[0], countM, countH, countF))
 
         print "%d tweets mention %s of the Finals" % (total, self.db)
+        out.close()
+    
+    def adjust_time(self):
+        """ Convert times from DAY HH:MM:SS format to second format. """
+        
+        data = csv.reader(open("data/" + self.db + "_clean.txt", "rU"), 
+                          delimiter = "\t")
+        out = open("data/" + self.db + "_time.txt", "w")
+        out.write("TIME\tDELTA\n")
+        
+        for row in data:
+            t = datetime.strptime(row[0][:19], "%Y-%m-%d %H:%M:%S")
+            timestamp = t - timedelta(hours=4)
+            delta = timestamp - self.tipoff
+            delta_s = delta.seconds + (delta.days * 86000)
+            out.write("%s\t%d\n" % (row[0], delta_s))
+            
         out.close()
